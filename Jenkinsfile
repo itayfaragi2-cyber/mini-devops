@@ -16,8 +16,11 @@ pipeline{
             }
             
             steps{
-                sh 'python -m pip install -r requirements-dev.txt'
-                sh 'python -m pytest -v'
+                sh '''
+                    python -m venv /tmp/jenkins-venv
+                    /tmp/jenkins-venv/bin/python -m pip install -r requirements-dev.txt
+                    /tmp/jenkins-venv/bin/python -m pytest -v
+                '''
             }
         }
     }
