@@ -71,7 +71,7 @@ pipeline{
                     sh '''
                         set +x
                         
-                        kubectl --token="$K8S_TOKEN" apply -f deployment/mini-devops flask-api=amnontt/mini-devops:$BUILD_NUMBER
+                        kubectl --token="$K8S_TOKEN" set image deployment/mini-devops flask-api=amnontt/mini-devops:$BUILD_NUMBER
                         
                         kubectl --token="$K8S_TOKEN" rollout status deployment/mini-devops --timeout=120s
                     '''
