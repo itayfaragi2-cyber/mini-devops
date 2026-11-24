@@ -78,5 +78,13 @@ pipeline{
                 }
             }
         }
+        stage('Smoke Test') {
+                steps {
+                    sh '''
+                        curl --fail --show-error --max-time 10 http://192.168.49.2:30080/health
+                    '''
+                }
+            }
+        }
     }
 }
