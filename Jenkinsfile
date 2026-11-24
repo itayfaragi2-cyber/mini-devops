@@ -62,5 +62,21 @@ pipeline{
                 }
             }
         }
+        stage('Kubernetes Deployment') {
+            steps{
+                withCredentials([string(
+                    credentialsId: 'kubernetes-token',
+                    variable: 'K8S_TOKEN'
+                )]) {
+                    sh '''
+                        set +x
+                        
+                        kubectl --token="$K8S_TOKEN" apply -f deployment/mini-devops flask-api=amnontt/mini-devops:$BUILD_NUMBER
+                        
+                        kubectl --token="$K8S_TOKEN" rollout status deployment/mini-devops --timeout=120s
+                    '''
+                }
+            }
+        }
     }
 }

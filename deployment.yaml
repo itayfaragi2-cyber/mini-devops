@@ -14,8 +14,8 @@ spec:
     spec:
       containers:
       - name: flask-api
-        image: mini-devops:v1
-        imagePullPolicy: Never
+        image: amnontt/mini-devops:14
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 5000
         
