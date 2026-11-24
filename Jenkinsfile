@@ -49,5 +49,18 @@ pipeline{
                 }
             }
         }
+        stage('Kubernetes Auth Test') {
+            steps{
+                withCredentials([string(
+                    credentialsId: 'kubernetes-token',
+                    variable: 'K8S_TOKEN'
+                )]) {
+                    sh '''
+                        set +x
+                        kubectl --token="$K8S_TOKEN" get deployment mini-devops
+                    '''
+                }
+            }
+
     }
 }
