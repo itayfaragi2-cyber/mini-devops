@@ -1,5 +1,9 @@
 pipeline{
     agent any
+
+    options {
+        disableConcurrentBuilds()
+    }
     
     stages{
         stage('Hello'){
@@ -68,13 +72,52 @@ pipeline{
                     credentialsId: 'kubernetes-token',
                     variable: 'K8S_TOKEN'
                 )]) {
-                    sh '''
-                        set +x
-                        
-                        kubectl --token="$K8S_TOKEN" set image deployment/mini-devops flask-api=amnontt/mini-devops:$BUILD_NUMBER
-                        
-                        kubectl --token="$K8S_TOKEN" rollout status deployment/mini-devops --timeout=120s
-                    '''
+                    script {
+                        def previousImage = sh(
+                            script: '''
+                                set +x
+                                kubectl --token="$K8S_TOKEN" get deployment mini-devops -o jsonpath='{.spec.template.spec.containers[?(@.name=="flask-api")].image}'
+                            ''',
+                            returnStdout: true
+                        ).trim()
+
+                        echo "Previous image: ${previousImage}"
+
+                        if (!previousImage) {
+                            error ("Previous image not found")
+                        }
+
+                        sh '''
+                            set +x
+                            kubectl --token="$K8S_TOKEN" set image deployment/mini-devops flask-api=amnontt/mini-devops:$BUILD_NUMBER
+                        '''
+
+                        try {
+                            sh '''
+                                set +x
+                                kubectl --token="$K8S_TOKEN" rollout status deployment/mini-devops --timeout=120s
+                                curl --fail --show-error --max-time 10 http://192.168.49.2:30080/health
+                            '''
+                        } catch (err) {
+                            echo 'Deployment failed, rolling back to previous image...'
+
+                            withEnv([
+                                "PREVIOUS_IMAGE=${previousImage}"
+                            ]) {
+                                sh '''
+                                    set +x
+                                    kubectl --token="$K8S_TOKEN" set image deployment/mini-devops flask-api="$PREVIOUS_IMAGE"
+                                    kubectl --token="$K8S_TOKEN" rollout status deployment/mini-devops --timeout=120s
+                                    curl --fail --show-error --max-time 10 http://192.168.49.2:30080/health
+                                '''
+                            }
+
+                            echo 'Rollback completed.'
+                            throw err
+                        }
+                    }
+
+
                 }
             }
         }
